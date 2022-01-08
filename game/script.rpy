@@ -1,8 +1,12 @@
 ﻿define crow = Character("Professor Crow")
+
+# Initializing variables.
 default poked_eye_count = 0
 default seen_lost_soul_choice = False
 default player = "Stranger"
 
+# Jumping into pure python so we can pull in needed libraries
+# for certain functionalities and also to code the eye follow movement.
 init python:
     import math
     import string
@@ -88,10 +92,16 @@ layeredimage crow:
         "exclamation"
 
 
-transform pupil():
+transform pupil_search():
     pos (755, 180)
     anchor (0.5, 0.5)
-    offset(0, 0)
+    offset(-15, 0)
+    block:
+        0.5
+        linear 1.0 xoffset 15
+        0.5
+        linear 1.0 xoffset -15
+        repeat
 
 transform pupil_follow():
     pos (755, 180)
@@ -102,10 +112,16 @@ label start:
     show white
     show crow
     if persistent.pissed_off_crow:
+        # The player has played through the end of the game at least one already.
+        # The crow doesn't want them here!
         jump go_away
     elif persistent.name:
+        # The player has played through the start of the game and met the crow,
+        # but they didn't poke the crow in the eye three times to get to the end of the game.
+        # Crow will remember their name and welcome them back.
         jump hello_again
     else:
+        # There is no persistent data for the player, treat them like a first time player.
         jump meet_crow
 
 label meet_crow:
@@ -172,6 +188,7 @@ label bird_watch:
     jump bird_watch
 
 label poked_eye:
+    # Alter animations and reacitons based on how many times we have poked the crow in the eye.
     if poked_eye_count < 2:
         show crow squint look_straight exclamation:
             linear 0.15 yoffset -50
@@ -199,6 +216,7 @@ label poked_eye:
         show crow top_closed
         crow "Please stop, we are looking for a {b}worm{/b} not an {b}eye{/b}."
     elif poked_eye_count == 2:
+        # Crow kicks us out.
         show crow top_closed -exclamation
         crow "HEY watch it!"
         show crow bottom_closed
@@ -216,6 +234,7 @@ label poked_eye:
     return
 
 label angry_squaking:
+    # This label is separate to make it a bit easier to reuse the squakking effect.
     show crow squint look_straight exclamation:
         linear 0.15 yoffset -50
         linear 0.25 yoffset 0
@@ -238,6 +257,8 @@ label choose_name(prompt):
         "A friend.":
             $ player = "Friend"
             crow "Oh, that's nice, friends are nice!"
+        # This is a conditional menu statement, Ren'Py will decide whether or not to display this choice based on the if statement that follows the choice.
+        # May be useful for the sandwich game, for example if you do not want to offer ham when ham has already been added you can use this to remove the option.
         "A lost soul." if not seen_lost_soul_choice:
             $ seen_lost_soul_choice = True
             show crow top_closed
@@ -256,6 +277,9 @@ label enter_name(prompt):
                                    length=15,
                                    default=player)
     $ potential_name = potential_name.strip().title()
+
+    # If you just want a simple name prompt, you can take the name, make sure it's not an empty string, and then stick it in your variable here.
+    # The code below is a little fancier if you want to trigger easter eggs based on what name your player chooses.
     if not potential_name:
         show crow open
         crow "..."
@@ -305,7 +329,7 @@ transform eye:
     anchor (0.5, 0.5)
 
 screen bird_watch(interactable=True):
-    default pupil_transform = pupil
+    default pupil_transform = pupil_search
     add "white"
     add "bird"
     imagebutton:
@@ -316,7 +340,9 @@ screen bird_watch(interactable=True):
         hovered Call("poked_eye")
         focus_mask True
     add "pupil" at pupil_transform
+    # The mouse area here is so that the "pupil follow" effect is only active when you're close enough to the crow.
+    # If you're on the edge of the screen the crow will not follow your mouse and will instead search on it's own.
     mousearea area (107, 60, 1066, 600):
         if interactable:
             hovered SetScreenVariable("pupil_transform", pupil_follow)
-            unhovered SetScreenVariable("pupil_transform", pupil)
+            unhovered SetScreenVariable("pupil_transform", pupil_search)
