@@ -111,6 +111,8 @@ transform pupil_follow():
 label start:
     show white
     show crow
+    # Checking persistent storage to see if there's any past playthroughs we should react to.
+    # Note that persistent storage fields default to None, so we do NOT need to set them before checking them.
     if persistent.pissed_off_crow:
         # The player has played through the end of the game at least one already.
         # The crow doesn't want them here!
@@ -145,6 +147,7 @@ label go_away:
     show crow top_closed exclamation
     crow "{i}YOU{/i}!"
     show crow bottom_closed -exclamation
+    # Persistent storage defualts to None so we want to check if it exists before comparing the timestamps.
     if not persistent.last_seen or persistent.last_seen < datetime.date.today():
         # It's been a day since we've seen crow.
         crow "You have some nerve showing yourself here, {i}[persistent.nam]{/i}..."
